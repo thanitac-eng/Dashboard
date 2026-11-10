@@ -1,0 +1,6 @@
+{
+  "name": "Workshop Pulse - Realtime Survey & Dashboard",
+  "description": "เว็บแอปเก็บแบบประเมินความพึงพอใจของผู้เข้าอบรมผ่านมือถือ พร้อมหน้า Dashboard แสดงผลคะแนนเฉลี่ย กราฟ และข้อเสนอแนะแบบเรียลไทม์บนจอโปรเจกเตอร์",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

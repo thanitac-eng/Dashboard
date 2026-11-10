@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard ผลประเมินการอบรม (Realtime)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- QRCode.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- Google Fonts: Prompt & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Prompt', 'Plus Jakarta Sans', sans-serif; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 antialiased min-h-screen p-4 md:p-8">
+
+  <!-- Top Navigation Bar for Projector -->
+  <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800 mb-8">
+    <div>
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          REALTIME LIVE
+        </span>
+        <span class="text-xs text-slate-400">อัปเดตอัตโนมัติทันทีที่มีคนตอบ</span>
+      </div>
+      <h1 class="text-2xl md:text-3xl font-bold text-white mt-1">Dashboard สรุปผลความพึงพอใจการอบรม</h1>
+      <p class="text-sm text-slate-400">โครงการอบรมเชิงปฏิบัติการเสริมสร้างทักษะดิจิทัลแห่งอนาคต</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3 flex-wrap">
+      <button onclick="toggleFullscreen()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition">
+        📺 ขยายเต็มจอ (Projector)
+      </button>
+      <button onclick="exportCSV()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5">
+        📥 ดาวน์โหลด CSV
+      </button>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+    <!-- QR Code Scan Box for Screen -->
+    <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80 flex flex-col items-center justify-center text-center">
+      <h3 class="text-base font-semibold text-white mb-2">สแกนเพื่อร่วมประเมิน</h3>
+      <div class="bg-white p-3 rounded-xl shadow-inner mb-3">
+        <canvas id="qrCanvas" class="w-40 h-40"></canvas>
+      </div>
+      <p class="text-xs text-slate-400">ใช้กล้องมือถือสแกน QR Code เพื่อตอบแบบสอบถาม</p>
+    </div>
+
+    <!-- KPI 1: จำนวนผู้ตอบ -->
+    <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80 flex flex-col justify-between">
+      <span class="text-xs uppercase tracking-wider text-slate-400">จำนวนผู้ตอบแบบประเมิน</span>
+      <div class="my-3">
+        <span id="kpiTotal" class="text-5xl font-extrabold text-white tabular-nums">0</span>
+        <span class="text-lg text-slate-400 ml-2">คน</span>
+      </div>
+      <div class="text-xs text-emerald-400" id="kpiProgress">ข้อมูลเรียลไทม์</div>
+    </div>
+
+    <!-- KPI 2: คะแนนเฉลี่ยรวม -->
+    <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80 flex flex-col justify-between">
+      <span class="text-xs uppercase tracking-wider text-slate-400">คะแนนเฉลี่ยรวมทุกด้าน (เต็ม 5.00)</span>
+      <div class="my-3">
+        <span id="kpiMean" class="text-5xl font-extrabold text-indigo-400 tabular-nums">0.00</span>
+        <span class="text-lg text-slate-400 ml-2">/ 5.00</span>
+      </div>
+      <div id="kpiLevelBadge" class="inline-block text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 w-fit">
+        รอข้อมูล
+      </div>
+    </div>
+
+    <!-- KPI 3: ข้อเสนอแนะ -->
+    <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80 flex flex-col justify-between">
+      <span class="text-xs uppercase tracking-wider text-slate-400">ข้อเสนอแนะที่ได้รับ</span>
+      <div class="my-3">
+        <span id="kpiSuggestions" class="text-5xl font-extrabold text-amber-400 tabular-nums">0</span>
+        <span class="text-lg text-slate-400 ml-2">ข้อความ</span>
+      </div>
+      <div class="text-xs text-slate-400">จากผู้เข้าร่วมอบรม</div>
+    </div>
+  </div>
+
+  <!-- Main Chart & Content Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Chart: Donut Chart 5 Questions -->
+    <div class="lg:col-span-2 bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80">
+      <h2 class="text-lg font-bold text-white mb-4">สัดส่วนคะแนนเฉลี่ยรายข้อ (กราฟวงกลม Donut Chart)</h2>
+      <div class="h-[360px]">
+        <canvas id="barChart"></canvas>
+      </div>
+      <div class="mt-4 pt-4 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+        <span>เกณฑ์: 4.51-5.00 (มากที่สุด)</span>
+        <span>3.51-4.50 (มาก)</span>
+        <span>2.51-3.50 (ปานกลาง)</span>
+        <span>1.51-2.50 (น้อย)</span>
+        <span>1.00-1.50 (น้อยที่สุด)</span>
+      </div>
+    </div>
+
+    <!-- Latest Suggestions Feed -->
+    <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80 flex flex-col">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-white">ข้อเสนอแนะล่าสุด</h2>
+        <span id="suggestionCountBadge" class="text-xs text-slate-400">0 รายการ</span>
+      </div>
+      <div id="suggestionsList" class="space-y-3 overflow-y-auto max-h-[380px] pr-2 flex-1">
+        <p class="text-sm text-slate-500 text-center py-10">ยังไม่มีข้อเสนอแนะ</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    let allResponses = [];
+    let myChart = null;
+
+    const questions = [
+      "1. เนื้อหาหลักสูตร",
+      "2. วิทยากรถ่ายทอด",
+      "3. สื่อและเอกสาร",
+      "4. เวลาและสถานที่",
+      "5. ภาพรวมและการนำไปใช้"
+    ];
+
+    function getLikertLevel(score) {
+      if (score >= 4.51) return { label: "มากที่สุด", color: "#10b981" };
+      if (score >= 3.51) return { label: "มาก", color: "#3b82f6" };
+      if (score >= 2.51) return { label: "ปานกลาง", color: "#eab308" };
+      if (score >= 1.51) return { label: "น้อย", color: "#f59e0b" };
+      return { label: "น้อยที่สุด", color: "#ef4444" };
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('barChart').getContext('2d');
+      myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: questions,
+          datasets: [{
+            label: 'คะแนนเฉลี่ย',
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: [
+              '#10b981',
+              '#3b82f6',
+              '#6366f1',
+              '#8b5cf6',
+              '#ec4899'
+            ],
+            borderColor: '#1e293b',
+            borderWidth: 3,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#cbd5e1',
+                padding: 16,
+                font: { family: 'Prompt', size: 12 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.parsed;
+                  const level = getLikertLevel(val);
+                  return ' คะแนน: ' + val.toFixed(2) + ' / 5.00 (' + level.label + ')';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateDashboard(responses) {
+      allResponses = responses;
+      const total = responses.length;
+
+      document.getElementById('kpiTotal').innerText = total;
+
+      if (total === 0) {
+        document.getElementById('kpiMean').innerText = '0.00';
+        document.getElementById('kpiLevelBadge').innerText = 'ยังไม่มีข้อมูล';
+        document.getElementById('kpiSuggestions').innerText = '0';
+        if (myChart) {
+          myChart.data.datasets[0].data = [0, 0, 0, 0, 0];
+          myChart.update();
+        }
+        return;
+      }
+
+      let sums = [0, 0, 0, 0, 0];
+      responses.forEach(r => {
+        sums[0] += Number(r.q1) || 0;
+        sums[1] += Number(r.q2) || 0;
+        sums[2] += Number(r.q3) || 0;
+        sums[3] += Number(r.q4) || 0;
+        sums[4] += Number(r.q5) || 0;
+      });
+
+      const means = sums.map(s => Number((s / total).toFixed(2)));
+      const overallMean = Number((means.reduce((a, b) => a + b, 0) / 5).toFixed(2));
+      const overallLevel = getLikertLevel(overallMean);
+
+      document.getElementById('kpiMean').innerText = overallMean.toFixed(2);
+      const badge = document.getElementById('kpiLevelBadge');
+      badge.innerText = 'ระดับ ' + overallLevel.label;
+      badge.style.color = overallLevel.color;
+
+      if (myChart) {
+        myChart.data.datasets[0].data = means;
+        myChart.data.datasets[0].backgroundColor = means.map(m => getLikertLevel(m).color);
+        myChart.update();
+      }
+
+      const suggestions = responses
+        .filter(r => r.suggestion && r.suggestion.trim().length > 0)
+        .map(r => r.suggestion.trim());
+
+      document.getElementById('kpiSuggestions').innerText = suggestions.length;
+      document.getElementById('suggestionCountBadge').innerText = suggestions.length + ' ข้อความ';
+
+      const listContainer = document.getElementById('suggestionsList');
+      if (suggestions.length === 0) {
+        listContainer.innerHTML = '<p class="text-sm text-slate-500 text-center py-10">ยังไม่มีข้อเสนอแนะ</p>';
+      } else {
+        listContainer.innerHTML = suggestions.map((text) => `
+          <div class="p-3.5 rounded-xl bg-slate-700/60 border border-slate-600/50 text-sm text-slate-200">
+            "${text}"
+          </div>
+        `).join('');
+      }
+    }
+
+    function generateQR() {
+      const surveyUrl = window.location.href.replace('dashboard.html', 'survey.html');
+      const canvas = document.getElementById('qrCanvas');
+      if (canvas && typeof QRCode !== 'undefined') {
+        QRCode.toCanvas(canvas, surveyUrl, {
+          width: 160,
+          margin: 1,
+          color: { dark: '#0f172a', light: '#ffffff' }
+        });
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    function exportCSV() {
+      if (allResponses.length === 0) {
+        alert('ยังไม่มีข้อมูลสำหรับส่งออก');
+        return;
+      }
+      let csv = '\uFEFF';
+      csv += 'ลำดับ,วันเวลา,ข้อ 1 (เนื้อหา),ข้อ 2 (วิทยากร),ข้อ 3 (สื่อเอกสาร),ข้อ 4 (เวลาสถานที่),ข้อ 5 (ภาพรวม),คะแนนเฉลี่ย,ข้อเสนอแนะ\n';
+      
+      allResponses.forEach((r, idx) => {
+        const time = new Date(r.timestamp).toLocaleString('th-TH');
+        const avg = ((r.q1 + r.q2 + r.q3 + r.q4 + r.q5) / 5).toFixed(2);
+        const sugg = (r.suggestion || '').replace(/"/g, '""').replace(/\n/g, ' ');
+        csv += `${idx + 1},"${time}",${r.q1},${r.q2},${r.q3},${r.q4},${r.q5},${avg},"${sugg}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'workshop_results_' + new Date().toISOString().slice(0, 10) + '.csv';
+      link.click();
+    }
+
+    window.onload = function() {
+      initChart();
+      generateQR();
+
+      try {
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+          firebase.initializeApp(firebaseConfig);
+          const db = firebase.database();
+          db.ref('responses').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+              const list = Object.keys(data).map(k => data[k]);
+              list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+              updateDashboard(list);
+            } else {
+              updateDashboard([]);
+            }
+          });
+        } else {
+          const local = JSON.parse(localStorage.getItem('workshop_pulse_responses_v1') || '[]');
+          updateDashboard(local);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+  </script>
+</body>
+</html>
